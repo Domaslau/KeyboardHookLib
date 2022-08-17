@@ -48,21 +48,6 @@ namespace KeyboardHookLib
 
 
         /// <summary>
-        /// Helper function to find an overlay.
-        /// </summary>
-        /// <param name="keyCode"></param>
-        /// <returns></returns>
-        private static IKeyboardOverlay? GetOverlay(int keyCode)
-        {
-            if( == null)
-            {
-                return null;
-            }
-            else { return _keyboardOverlays[keyCode]; }
-        }
-
-
-        /// <summary>
         /// An application-defined or library-defined callback function used with the SetWindowsHookEx function
         /// </summary>
         /// <param name="nCode"></param>

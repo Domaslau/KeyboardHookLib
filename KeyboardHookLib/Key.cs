@@ -15,7 +15,6 @@ namespace KeyboardHookLib
         private Action keyUp;
         private int keyCode;
         private bool preventDefault;
-
         public Action KeyDown {
                 get { return keyDown; }
                 set { keyDown = value; } 
