@@ -78,6 +78,10 @@ kOverlay.AssignAction(
     }
 );
 
+/**
+* Array of overlays allows for easy determination if trigger was pressed.
+* Each index in the array could be mapped to a Virtual-Key code in Windows.
+*/
 KeyboardOverlay[] overlays = new KeyboardOverlay[256];
 overlays[kOverlay.Trigger] = kOverlay;
 
