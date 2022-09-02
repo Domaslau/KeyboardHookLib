@@ -12,7 +12,6 @@ namespace KeyboardHookLib
         private static IntPtr _hookID = IntPtr.Zero;
         public static IKeyboardOverlay[]? _keyboardOverlays;
         private static IKeyboardOverlay? _activeOverlay;
-        public static bool _preventDefault = true;
 
 
         /// <summary>
@@ -46,7 +45,7 @@ namespace KeyboardHookLib
             }
         }
 
-
+        
         /// <summary>
         /// An application-defined or library-defined callback function used with the SetWindowsHookEx function
         /// </summary>
@@ -67,90 +66,48 @@ namespace KeyboardHookLib
         private static IntPtr HookCallback(
             int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode < 0) { return CallNextHookEx(_hookID, nCode, wParam, lParam); };
+            //As per microsoft specification if nCode is less than 0 return immediately without processing
+            if (nCode < 0) { return CallNextHookEx(_hookID, nCode, wParam, lParam); }
+
+            //read virtual key code to a variable
             int vkCode = Marshal.ReadInt32(lParam);
 
-            //Active overlay can only be set when key is down.
-            if (wParam == (IntPtr)WM_KEYDOWN)
+
+            if(_activeOverlay != null)
             {
-                //if activeOverlay is not set and keyboarOverlays has an entry for the key set that to active overlay.
-                if(_activeOverlay == null && _keyboardOverlays[vkCode]!=null)
+                //If trigger key was untoggled clear active overlay and proceed with next hook
+                if (GetKeyState(_activeOverlay.GetTrigger()) == -128) { _activeOverlay = null;  return CallNextHookEx(_hookID, nCode, wParam, lParam); }
+
+                //Depending on keyup or key down run associated action
+                if (wParam == (IntPtr)WM_KEYDOWN)
+                {
+                    if (_activeOverlay.RunKeyDown(vkCode))
+                    {
+                       return _hookID;
+                    }
+                    else return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                }
+                if (wParam == (IntPtr)WM_KEYUP)
+                {
+                    if (_activeOverlay.RunKeyUp(vkCode))
+                    {
+                        return _hookID;
+                    }
+                    else return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                }
+
+                //Any other key state proceed to next hook
+                return CallNextHookEx(_hookID, nCode, wParam, lParam);
+            }
+            else
+            {
+                //If keyboard overlays has an entry associated with virtual key code set that as active overlay.
+                if (_keyboardOverlays[vkCode] != null)
                 {
                     _activeOverlay = _keyboardOverlays[vkCode];
                     return CallNextHookEx(_hookID, nCode, wParam, lParam);
-                }
-                //If overlay is not null
-                else
-                {
-                   //Check if overlay should be toggled if it's toggle it will run anything available from active overlay
-                    if (_activeOverlay.GetToggle())
-                    {
-                        if (_activeOverlay.RunKeyDown(vkCode))
-                        {
-                            return _hookID;
-                        }
-                    }
-                    //Else only run if GetKeyState returns negative value.
-                    else
-                    {
-                        if(GetKeyState(_activeOverlay.GetTrigger()) < 0)
-                        {
-                            if (_activeOverlay.RunKeyDown(vkCode)) { 
-                                return _hookID;
-                            }
-
-                        }
-                    }
-                }
+                } else return CallNextHookEx(_hookID, nCode, wParam, lParam);
             }
-
-            //Active overlay should be cleared only on key up event.
-            if (wParam == (IntPtr)WM_KEYUP)
-            {
-                if (_activeOverlay == null) { return CallNextHookEx(_hookID, vkCode, wParam, lParam); }
-                //if current key up event trigger is the trigger key for active overlay
-                if (_activeOverlay.GetTrigger() == vkCode)
-                {
-                    if (_activeOverlay.GetToggle())
-                    {
-                        //Only clear if key state is in 0
-                        if(GetKeyState(_activeOverlay.GetTrigger()) == -128 || GetKeyState(_activeOverlay.GetTrigger()) == 0) {
-                            _activeOverlay = null;
-                        }
-                       
-                    } 
-                    //Clear if trigger needs to be held
-                    else
-                    {
-                        _activeOverlay = null;
-                    }
-                } 
-                //else it will run overlay key up 
-                else
-                {
-                    //if it's toggle run always
-                    if (_activeOverlay.GetToggle())
-                    {
-                        if (_activeOverlay.RunKeyUp(vkCode))
-                        {
-                            return _hookID;
-                        }
-                    }
-                    //else only run if GetKeyState returns negative value.
-                    else
-                    {
-                        if (GetKeyState(_activeOverlay.GetTrigger()) < 0)
-                        {
-                            if (_activeOverlay.RunKeyUp(vkCode))
-                            {
-                                return _hookID;
-                            }
-                        }
-                    }
-                }
-            };
-
-            return CallNextHookEx(_hookID, nCode, wParam, lParam);
         }
 
 
