@@ -63,41 +63,66 @@ namespace KeyboardHookLib
         /// <param name="wParam"></param>
         /// <param name="lParam"></param>
         /// <returns></returns>
-        private static IntPtr HookCallback(
-            int nCode, IntPtr wParam, IntPtr lParam)
+        private static IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             //As per microsoft specification if nCode is less than 0 return immediately without processing
             if (nCode < 0) { return CallNextHookEx(_hookID, nCode, wParam, lParam); }
 
             //read virtual key code to a variable
             int vkCode = Marshal.ReadInt32(lParam);
-
-
             if(_activeOverlay != null)
-            {
-                //If trigger key was untoggled clear active overlay and proceed with next hook
-                if (GetKeyState(_activeOverlay.GetTrigger()) == -128) { _activeOverlay = null;  return CallNextHookEx(_hookID, nCode, wParam, lParam); }
+            {  
+                   
+                if (!_activeOverlay.IsKeySet(vkCode) && vkCode != _activeOverlay.GetTrigger()) { return CallNextHookEx(_hookID, nCode, wParam, lParam); };
+                if (_activeOverlay.IsToggle())
+                {
+                    if (GetKeyState(_activeOverlay.GetTrigger()) == -128) { _activeOverlay = null; return CallNextHookEx(_hookID, nCode, wParam, lParam); }
 
-                //Depending on keyup or key down run associated action
-                if (wParam == (IntPtr)WM_KEYDOWN)
-                {
-                    if (_activeOverlay.RunKeyDown(vkCode))
+                    //Depending on keyup or key down run associated action
+                    if (wParam == (IntPtr)WM_KEYDOWN)
                     {
-                       return _hookID;
+                        if (_activeOverlay.RunKeyDown(vkCode))
+                        {
+                            return _hookID;
+                        }
+                        else return CallNextHookEx(_hookID, nCode, wParam, lParam);
                     }
-                    else return CallNextHookEx(_hookID, nCode, wParam, lParam);
-                }
-                if (wParam == (IntPtr)WM_KEYUP)
-                {
-                    if (_activeOverlay.RunKeyUp(vkCode))
+                    if (wParam == (IntPtr)WM_KEYUP)
                     {
-                        return _hookID;
+                        if (_activeOverlay.RunKeyUp(vkCode))
+                        {
+                            return _hookID;
+                        }
+                        else return CallNextHookEx(_hookID, nCode, wParam, lParam);
                     }
-                    else return CallNextHookEx(_hookID, nCode, wParam, lParam);
+
+                } else
+                {
+                    if (GetKeyState(_activeOverlay.GetTrigger()) > -1) { _activeOverlay = null; return CallNextHookEx(_hookID, nCode, wParam, lParam); };
+                    if(GetKeyState(_activeOverlay.GetTrigger()) == vkCode) { return CallNextHookEx(_hookID, nCode, wParam, lParam); };
+
+                    //Depending on keyup or key down run associated action
+                    if (wParam == (IntPtr)WM_KEYDOWN)
+                    {
+                        if (_activeOverlay.RunKeyDown(vkCode))
+                        {
+                            return _hookID;
+                        }
+                        else return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                    }
+                    if (wParam == (IntPtr)WM_KEYUP)
+                    {
+                        if (_activeOverlay.RunKeyUp(vkCode))
+                        {
+                            return _hookID;
+                        }
+                        else return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                    }
                 }
 
                 //Any other key state proceed to next hook
-                return CallNextHookEx(_hookID, nCode, wParam, lParam);
+                return CallNextHookEx(_hookID, nCode, wParam, lParam); 
+
             }
             else
             {

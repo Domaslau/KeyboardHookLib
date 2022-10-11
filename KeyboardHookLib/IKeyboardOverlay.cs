@@ -11,6 +11,7 @@ namespace KeyboardHookLib
         bool RunKeyUp(int keyCode);
         bool RunKeyDown(int keyCode);
         int GetTrigger();
-        bool GetToggle();
+        bool IsToggle();
+        bool IsKeySet(int keyCode);
     }
 }

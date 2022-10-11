@@ -31,7 +31,7 @@ namespace KeyboardHookLib
             return trigger;
         }
 
-        public bool GetToggle()
+        public bool IsToggle()
         {
             return toggle;
         }
@@ -41,7 +41,7 @@ namespace KeyboardHookLib
         /// </summary>
         /// <param name="trigger">what key triggers the overlay to be active</param>
         /// <param name="toggle">should overlay toggle rather than hold to use default: true</param>
-        public KeyboardOverlay(int trigger, bool toggle=true)
+        public KeyboardOverlay(int trigger, bool toggle)
         {
             this.trigger = trigger;
             this.toggle= toggle;
@@ -93,6 +93,11 @@ namespace KeyboardHookLib
         public void AssignAction(int keyCode, Action actionDown, Action actionUp)
         {
             keys[keyCode] = new Key(keyCode, actionDown, actionUp);
+        }
+
+        public bool IsKeySet(int keyCode)
+        {
+            return keys[keyCode] != null;
         }
     }
 }
